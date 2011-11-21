@@ -72,6 +72,9 @@
 //
 //  draw_tic_mark: true or false.
 //
+//  region_start_offset: for bp tick marks, start at this offset
+//
+//
 // FRAMEWORK
 // GiraffeDraw()
 // |
@@ -592,7 +595,7 @@ window.GiraffeDraw = function () {
             _enzyme_weight, enzyme_bold_weight,
             _label_line_weight, _label_line_bold_weight, _label_font_size,
             _plasmid_font_size, _plasmid_name, _draw_tic_mark, _draw_plasmid_size,
-            thi$ = {};
+            _region_start_offset, thi$ = {};
 
         init();
 
@@ -626,6 +629,8 @@ window.GiraffeDraw = function () {
             if ('plasmid_name' in options) {
                 _plasmid_name = options.plasmid_name;
             }
+            _region_start_offset = 0;
+            if ('region_start_offset' in options) { _region_start_offset = parseInt(options['region_start_offset']); }
 
             // Draw plasmid size
             _draw_plasmid_size = true;
@@ -719,6 +724,7 @@ window.GiraffeDraw = function () {
         thi$.label_font_size = function() { return  _label_font_size; };
         thi$.plasmid_font_size = function() { return  _plasmid_font_size; };
         thi$.plasmid_name = function() { return  _plasmid_name; };
+        thi$.region_start_offset = function() { return  _region_start_offset; };
         thi$.draw_tic_mark = function() { return  _draw_tic_mark; };
         thi$.draw_plasmid_size = function() { return  _draw_plasmid_size; };
 
@@ -1454,6 +1460,7 @@ window.GiraffeDraw = function () {
             if (this.plasmid_name() !== "") {
                 title = this.plasmid_name() + "\n\n" + title;
             }
+
             var plasmid_label = this.paper.text(cx, cy, title);
             plasmid_label.attr({"fill":      colors.plasmid,
                                 "font-size": this.plasmid_font_size() });
@@ -1896,6 +1903,7 @@ window.GiraffeDraw = function () {
                 // "push the end forward."
                 if (this.draw_head && !this.clockwise()) { // Take the minimum head size into account
                     re = convert.pos_to_x(this.start()) + this.real_size();
+                    if (re > plasmid_width+plasmid_left) { re = plasmid_left+plasmid_width; }
                 } else { // Headless feature, or head is pointing the wrong way.
                          // Just give its typical end position
                     re = convert.pos_to_x(this.end());
@@ -2077,7 +2085,7 @@ window.GiraffeDraw = function () {
             var tic_mark_y = plasmid_y + 2* y_spacing;
             var tic_label_y = tic_mark_y + 1.5*tic_mark_length;
 
-            function draw_tic_mark(p) {
+            function draw_tic_mark(p,t) {
                 var x = convert.pos_to_x(p);
                 var y0 = tic_mark_y - tic_mark_length/2;
                 var y1 = tic_mark_y + tic_mark_length/2;
@@ -2085,7 +2093,7 @@ window.GiraffeDraw = function () {
                                      svg.line(x, y1));
                 tic.attr({"stroke": colors.bg_text});
 
-                var label = thi$.paper.text(x, tic_label_y, String(p));
+                var label = thi$.paper.text(x, tic_label_y, String(t));
                 label.attr({"fill": colors.bg_text});
             }
 
@@ -2094,6 +2102,7 @@ window.GiraffeDraw = function () {
 
             plasmid.attr("stroke", colors.plasmid);
             var title = seq_length + ' bp';
+            if (this.region_start_offset() != 0) { title = (1+this.region_start_offset())+' - '+(this.region_start_offset()+seq_length); }
             if (this.plasmid_name() !== "") {
                 title = this.plasmid_name() + ": " + title;
             }
@@ -2105,11 +2114,12 @@ window.GiraffeDraw = function () {
             // i.e. 100, 1000, 10, etc.
             if (this.draw_tic_mark()) {
                 var scale = Math.pow(10, Math.floor(Math.log(seq_length)/Math.log(10)));
+                draw_tic_mark(1,this.region_start_offset()+1);
                 for (var xx = scale; xx <= seq_length; xx += scale) {
-                    draw_tic_mark(xx);
+                    draw_tic_mark(xx,xx+this.region_start_offset());
                 }
+                draw_tic_mark(seq_length,seq_length+this.region_start_offset());
             }
-
         };
 
         thi$.resolve_conflicts = function () {
