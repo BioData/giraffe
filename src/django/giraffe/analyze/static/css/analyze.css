@@ -16,10 +16,10 @@ svg path { cursor:pointer; }
 /* height: we want giraffe-tabs to be really tall, so we avoid double or triple
  * scroll bars. we want the seq-viewer to be on one page, so when we search and
  * highlight sequences, we can pop user to the right place immediately. */
-.giraffe-viewer { height:700px; overflow:auto; }
+.giraffe-viewer { overflow:auto; }
 /* -seq-viewer should be contained within -viewer */
-.giraffe-seq-viewer { height:600px; overflow:auto; }
-.giraffe-tabs { height:3000px; overflow:auto; }
+.giraffe-seq-viewer { overflow:auto; }
+.giraffe-tabs { overflow:auto; }
 
 /* Generic */
 .giraffe-clear { clear:both; margin:15px; }
