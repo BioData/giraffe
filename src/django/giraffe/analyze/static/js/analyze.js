@@ -51,7 +51,7 @@ window.GiraffeAnalyze = function ($,gd,options) {
     var starts_with_linear_map = false;
     if ('linear_map' in options && options.linear_map) { starts_with_linear_map = true; }
 
-    var viewer_segs_per_line = 5;
+    var viewer_segs_per_line = 10;
 
     var seqlen = gd.sequence.length;
     var sequence = new BioJS.DNASequence(gd.sequence);
@@ -1354,15 +1354,15 @@ window.GiraffeAnalyze = function ($,gd,options) {
     }
 
     function full_widget() {
-        var dom_table = $('<table></table>');
-        var dom_row = $('<tr></tr>');
+        var dom_table = $('<div></div>');
+        var dom_row = $('<div></div>');
         $(dom_table).append(dom_row);
 
         var dom_id_viewer = random_dom_id();
         var dom_id_tabs = random_dom_id();
 
-        var dom_viewer = $('<td id="'+dom_id_viewer+'"></td>');
-        var dom_tabs = $('<td id="'+dom_id_tabs+'"></td>');
+        var dom_viewer = $('<div id="'+dom_id_viewer+'"></div>');
+        var dom_tabs = $('<div id="'+dom_id_tabs+'"></div>');
 
         $(dom_row)
             .append(dom_viewer)
@@ -1377,11 +1377,11 @@ window.GiraffeAnalyze = function ($,gd,options) {
         analyzer_tabs(dom_tabs);
         sequence_viewer_bp_event(dom_viewer);
 
-        $(dom_main).width(analyzer_width);
+        //$(dom_main).width(analyzer_width);
         var viewer_width = 2*analyzer_width/5;
         var tabs_width = analyzer_width-viewer_width;
-        $(dom_viewer).width(viewer_width);
-        $(dom_tabs).width(tabs_width);
+        //$(dom_viewer).width(viewer_width);
+        //$(dom_tabs).width(tabs_width);
     
         $(dom_main).tooltip();
     }
