@@ -8,7 +8,7 @@ PROJECT_DIR = os.path.dirname(__file__)
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (('Addgene Help', 'help@addgene.org'),)
+ADMINS = (('Addgene Help', 'shuky@biodata.com'),)
 
 MANAGERS = ADMINS
 
