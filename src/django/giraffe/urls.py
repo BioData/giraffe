@@ -15,6 +15,8 @@ urlpatterns = patterns('',
     url(r'^test/analyze/(\w+)/(\w+)/?$', views.test_analyze, name='analyzer'),
     (r'^test/draw/(\w+)/(\w+)/?$', views.test_draw),
 
+    (r'^robots\.txt$', lambda r: HttpResponse("User-agent: *\nDisallow: /", mimetype="text/plain")),
+    
     (r'^/test/$', direct_to_template, { 'template' : 'test/post.html' }),
     (r'^/?$', direct_to_template, { 'template' : 'test/post.html' }),
 )
