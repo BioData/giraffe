@@ -5,7 +5,7 @@ import os.path
 
 PROJECT_DIR = os.path.dirname(__file__)
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (('Addgene Help', 'shuky@biodata.com'),)
@@ -15,12 +15,12 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'OPTIONS': { "init_command": "SET storage_engine=INNODB" },
+        'OPTIONS': { "init_command": "SET default_storage_engine=INNODB" },
         'NAME': 'giraffe',
         'USER': 'root',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
+        'PASSWORD': 'giraffeAdmin',
+        'HOST': 'giraffe-db',
+        'PORT': '3306',
     }
 }
 
@@ -102,8 +102,13 @@ INSTALLED_APPS = (
 
 # set this to where you want your static files to db
 STATIC_ROOT = '../../../files'
+
+SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
+STATICFILES_DIRS = (
+  os.path.join(SITE_ROOT, '../../../files'),
+)
+
 STATIC_BLAT_ROOT = 'blat/static'
 STATIC_ANALYZE_ROOT = 'analyze/static'
 
 SESSION_COOKIE_NAME = 'giraffe'
-

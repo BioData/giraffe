@@ -29,6 +29,7 @@ detection.
         array of features.
 """
 def post(request):
+    
     assert (request.method == 'POST')
     db_name = request.POST['db']
     sequence = request.POST['sequence']
@@ -145,5 +146,3 @@ def get(request,hash,db_name):
     # should attach some kind of CGI string to invalidate cache.
     http_res['Cache-Control'] = 'max-age=2592000'
     return http_res
-
-

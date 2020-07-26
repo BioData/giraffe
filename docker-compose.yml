@@ -1,0 +1,34 @@
+version: '2'
+services:
+  giraffe-db:
+    container_name: giraffe-db
+    image: mysql:5.7
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3307:3306"
+    expose:
+      - '3306'
+    volumes:
+      - my-datavolume:/var/lib/mysql
+    environment:
+      DB_NAME: "giraffe"
+      DB_PASSWORD: "giraffeAdmin"
+      MYSQL_ROOT_PASSWORD: "giraffeAdmin"
+      MYSQL_DATABASE: "giraffe"
+      MYSQL_USER: "root"
+      MYSQL_PASSWORD: "giraffeAdmin"
+  giraffe-web:
+    container_name: giraffe-web
+    depends_on:
+      - 'giraffe-db'
+    build: .
+    volumes:
+      - ".:/giraffe_web"
+    ports:
+      - "8000:8000"
+    expose:
+      - "8000"
+    links:
+      - giraffe-db:db
+volumes:
+  my-datavolume:

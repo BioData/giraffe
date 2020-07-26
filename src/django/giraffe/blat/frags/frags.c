@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <ctype.h>
 
 struct feature {
   unsigned feature_index;
@@ -64,7 +65,7 @@ load_features (char *blastdata)
     nw = 0;
     for (i=0,j=0; i<strlen (buf); i++) {
       if (buf[i] != ',')
-        word[j++] = buf[i]; 
+        word[j++] = buf[i];
       else {
         int v;
         word[j] = '\0';
@@ -111,7 +112,7 @@ void* get_iterator_data ()
 }
 
 void free_iterator_data (void *v) { free (v); }
-  
+
 static int on_list[MAX_NFEATURES];
 unsigned int on_list_cur = 0;
 
@@ -237,7 +238,7 @@ get_frags (char *file, FILE *fp)
       // fprintf (stderr, "%s cut off at pos %d (%d)\n", file, n, c);
       // break;
     }
-    s[n] = toupper (c); 
+    s[n] = toupper (c);
     n++;
   }
   s[n] = '\0';
@@ -280,4 +281,3 @@ main (int argc, char *argv[])
   }
   return 0;
 }
-
