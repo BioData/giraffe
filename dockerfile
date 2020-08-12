@@ -12,9 +12,10 @@ RUN pip install mysqlclient
 RUN apt-get install -y libmcrypt-dev default-mysql-client
 COPY . .
 RUN pip install numpy==1.5.1
+WORKDIR /usr/src/app/giraffe
 RUN pip install biopython-1.56.tar.gz
-WORKDIR /usr/src/app/src/django/giraffe/blat/frags
+WORKDIR /usr/src/app/giraffe/src/django/giraffe/blat/frags
 RUN gcc -O6 -o bin/frags frags.c
-WORKDIR /usr/src/app/src/django/giraffe
+WORKDIR /usr/src/app/giraffe/src/django/giraffe
 # CMD ["python", "manage.py" ,"syncdb --noinput"]
 # CMD [ "python", "./manage.py", "runserver" ,"0.0.0.0:8000"]
