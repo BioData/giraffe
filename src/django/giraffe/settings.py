@@ -72,6 +72,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.common.CommonMiddleware',
 #    'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,7 +82,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
     'django.middleware.transaction.TransactionMiddleware',
 )
-
+CORS_ORIGIN_ALLOW_ALL = True
 ROOT_URLCONF = 'giraffe.urls'
 
 TEMPLATE_DIRS = (
@@ -96,7 +97,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.flatpages',
     'django.contrib.admin',
-
+    'corsheaders',
     'giraffe.blat',
 )
 
