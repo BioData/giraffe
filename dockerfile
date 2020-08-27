@@ -24,6 +24,7 @@ RUN pip install biopython-1.56.tar.gz
 WORKDIR /var/www/giraffe/src/django/giraffe/blat/frags
 RUN gcc -O6 -o bin/frags frags.c
 RUN a2ensite giraffe.labguru.com.conf && a2dissite 000-default
+RUN a2enmod headers 
 RUN update-rc.d apache2 enable
 WORKDIR /var/www/giraffe/files
 RUN ln -s /var/www/giraffe/src/django/giraffe/analyze/static analyze
