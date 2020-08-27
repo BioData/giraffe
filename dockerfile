@@ -21,5 +21,5 @@ RUN pip install django-cors-headers==1.0.0
 WORKDIR /usr/src/app/src/django/giraffe/blat/frags
 RUN ["gcc", "-o","bin/frags", "frags.c"]
 WORKDIR /usr/src/app/src/django/giraffe
-
+RUN ["python", "manage.py" ,"syncdb --noinput"]
 CMD [ "python", "./manage.py", "runserver" ,"0.0.0.0:8000"]
