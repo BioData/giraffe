@@ -72,7 +72,6 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.common.CommonMiddleware',
 #    'django.middleware.csrf.CsrfViewMiddleware',
@@ -97,7 +96,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.flatpages',
     'django.contrib.admin',
-    'corsheaders',
     'giraffe.blat',
 )
 
