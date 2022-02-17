@@ -1,0 +1,20 @@
+FROM python:2.7.18-buster
+
+RUN apt-get update
+RUN apt-get install python-mysqldb libmcrypt-dev default-mysql-client bash -y
+
+RUN git clone https://github.com/BioData/giraffe.git 
+
+WORKDIR /giraffe
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install biopython-1.56.tar.gz
+
+WORKDIR /giraffe/src/django/giraffe/blat/frags
+RUN gcc -O6 -o bin/frags frags.c
+
+
+EXPOSE 8000
+
+# runs the production server
+WORKDIR /giraffe/src/django/giraffe
+CMD ["/bin/bash","runner.sh"]
