@@ -2,6 +2,7 @@
 # Django settings for giraffe project.
 
 import os.path
+from os import environ as enVar
 
 PROJECT_DIR = os.path.dirname(__file__)
 
@@ -18,8 +19,8 @@ DATABASES = {
         'OPTIONS': { "init_command": "SET default_storage_engine=INNODB" },
         'NAME': 'giraffe',
         'USER': 'root',
-        'PASSWORD': 'giraffeAdmin',
-        'HOST': 'giraffe-db',
+        'PASSWORD': enVar.get('DB_PASS'),
+        'HOST': enVar.get('DB_HOST'),
         'PORT': '3306',
     }
 }
