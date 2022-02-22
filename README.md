@@ -27,40 +27,15 @@ If you are running a MySQL container don't forget to add "--network=host" when r
 docker build -t foo https://github.com/BioData/giraffe.git && docker run -e DB_PASS=Password -e DB_HOST=127.0.0.1 -p 8000:8000 --network=host --rm -it foo
 ```
 
-
-Requirement for Django service:
-
-	gcc - part of the feature detection algorithm is in C
-	python (2.7+)
-	django (1.2+)
-	BioPython (1.56) - ORF detection via BioPython
-		(You don't need NumPy for BioPython)
-	MySQL, and mysql-python module
+# Setup DB sercer:
+	Login to your MySQL server and create the database 'giraffe':
+	```
+	CREATE DATABASE giraffe CHARACTER SET 'utf8'
+	```
 
 
-Install Django service:
 
-	git clone git@github.com:addgene/giraffe.git
-	cd giraffe
-	cd src/django/giraffe/blat/frags; gcc -O6 -o bin/frags frags.c
-
-	mysql
-	> DROP DATABASE giraffe;
-	> CREATE DATABASE giraffe CHARACTER SET 'utf8'
-	
-	cd src/django/giraffe; python manage.py syncdb --noinput
-
-
-Run test server:
-
-	cd src/django/giraffe; python manage.py runserver
-
-	Then visit "/"
-
-	Click on "See an example" to see an example.
-
-
-API:
+# API:
 
 	You can POST a sequence to "/blat/", with the following CGI variables:
 
