@@ -1,3 +1,4 @@
+# About
 Giraffe: tool for detecting popular features in DNA sequence, creating
 maps of those features, and performing sequence analysis.
 
@@ -53,8 +54,8 @@ docker build -t foo https://github.com/BioData/giraffe.git && docker run -e DB_P
 	directory. You can download the HTML files from the demo directory to your
 	local computer, and load them in your browser. These files show how you can
 	incorporate Giraffe sequence map and analyzer widgets in your web app.
-	
 
+	
 How to build your own features database:
 
 	To be added later.
