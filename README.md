@@ -22,7 +22,7 @@ Don't forget to change DB_HOST and DB_PASS accordingly.
 docker build -t foo https://github.com/BioData/giraffe.git && docker run -e DB_PASS=Password -e DB_HOST=127.0.0.1 -p 8000:8000 --rm -it foo
 ```
 
-If you are running a MySQL container don't forget to add "--network=host" when running dockerfile.new:
+If you are running a MySQL container don't forget to add "--network=host" when running:
 ```
 docker build -t foo https://github.com/BioData/giraffe.git && docker run -e DB_PASS=Password -e DB_HOST=127.0.0.1 -p 8000:8000 --network=host --rm -it foo
 ```
