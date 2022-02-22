@@ -15,6 +15,7 @@ the demo directory.
 # Test run
 * No cloneing of repository is needed.
 * MySQL server running is required.
+
 Run on a test on standalone server.
 Don't forget to change DB_HOST and DB_PASS accordingly. 
 ```
