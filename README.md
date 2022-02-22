@@ -16,7 +16,7 @@ the demo directory.
 * No cloneing of repository is needed.
 * MySQL server running is required.
 
-Run on a test on standalone server.
+Run a test on standalone server.
 Don't forget to change DB_HOST and DB_PASS accordingly. 
 ```
 docker build -t foo https://github.com/BioData/giraffe.git && docker run -e DB_PASS=Password -e DB_HOST=127.0.0.1 -p 8000:8000 --rm -it foo
