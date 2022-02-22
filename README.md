@@ -13,16 +13,17 @@ widget for visualizing and analyzing sequence and features. See HTML files in
 the demo directory.
 
 # Test run
-* Required MySQL server running.
+* No cloneing of repository is needed.
+* MySQL server running is required.
 Run on a test on standalone server.
 Don't forget to change DB_HOST and DB_PASS accordingly. 
 ```
-docker build -t foo -f dockerfile.new . && docker run -e DB_PASS=Password -e DB_HOST=127.0.0.1 -p 8000:8000 --rm -it foo
+docker build -t foo https://github.com/BioData/giraffe.git && docker run -e DB_PASS=Password -e DB_HOST=127.0.0.1 -p 8000:8000 --rm -it foo
 ```
 
 If you are running a MySQL container don't forget to add "--network=host" when running dockerfile.new:
 ```
-docker build -t foo -f dockerfile.new . && docker run -e DB_PASS=Password -e DB_HOST=127.0.0.1 -p 8000:8000 --network=host --rm -it foo
+docker build -t foo https://github.com/BioData/giraffe.git && docker run -e DB_PASS=Password -e DB_HOST=127.0.0.1 -p 8000:8000 --network=host --rm -it foo
 ```
 
 
