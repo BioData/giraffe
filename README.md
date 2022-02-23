@@ -15,7 +15,7 @@ the demo directory.
 
 # Test run
 * No cloneing of repository is needed.
-* MySQL server running is required.
+* MySQL 5.5+ server running is required.
 
 Run a test on standalone server.
 Don't forget to change DB_HOST and DB_PASS accordingly. 
@@ -29,6 +29,7 @@ docker build -t foo https://github.com/BioData/giraffe.git && docker run -e DB_P
 ```
 
 # Setup DB sercer:
+* MySQL 5.5+ server.
 	Login to your MySQL server and create the database 'giraffe':
 	```
 	CREATE DATABASE giraffe CHARACTER SET 'utf8'

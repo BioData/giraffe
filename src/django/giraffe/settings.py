@@ -16,9 +16,8 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'OPTIONS': { "init_command": "SET default_storage_engine=INNODB" },
         'NAME': 'giraffe',
-        'USER': 'root',
+        'USER': enVar.get('DB_USER'),
         'PASSWORD': enVar.get('DB_PASS'),
         'HOST': enVar.get('DB_HOST'),
         'PORT': '3306',
