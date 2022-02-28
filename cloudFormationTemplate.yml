@@ -1,0 +1,694 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::SecretsManager-2020-07-23
+
+Description: Giraffe Stack.
+
+Mappings:
+  SubnetConfig:
+    VPC:
+      CIDR: "10.0.0.0/16"
+    PublicOne:
+      CIDR: "10.0.0.0/24"
+    PublicTwo:
+      CIDR: "10.0.1.0/24"
+    PrivateOne:
+      CIDR: "10.0.2.0/24"
+    PrivateTwo:
+      CIDR: "10.0.3.0/24"
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Environment Name."
+        Parameters:
+          - EnvironmentName
+          - EnvType
+      - Label:
+          default: "ECS - Dev Defaults."
+        Parameters:
+          - DesiredCount
+          - MaxCount
+          - ContainerPort
+          - ContainerCpu
+          - ContainerMemory
+          - Path
+          - SSLCertARN
+          - ImageUrl
+    ParameterLabels:
+      EnvironmentName:
+        default: "Name of the Environment. (This will add the environment name to all Resources.)"
+      EnvType:
+        default: "Choose either Prod/Dev."
+      DesiredCount:
+        default: "Minimum amout of running containers."
+      MaxCount:
+        default: "Maximum amout of running containers."
+      ContainerCpu:
+        default: "How many CPU units for the running container. (1024 = 1CPU. Min 2CPU for Prod.)"
+      ContainerMemory:
+        default: "How much RAM for the running container. (In MegaBytes. Min 4096 for Prod.)"
+      ContainerPort:
+        default: "The port for the running container."
+      Path:
+        default: "A path on the load balancer this service
+          should be connected to. Use * to send all load balancer
+          traffic to this service."
+      SSLCertARN:
+        default: "HTTPS. (Put in the ARN of the SSL.)"
+      ImageUrl:
+        default: "The image for the running container."
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: "***  Change me  ***"
+
+  EnvType:
+    Default: Dev
+    Type: String
+    AllowedValues: [Prod, Dev]
+
+  ###
+  # ECS
+  ###
+  SSLCertARN:
+    Type: String
+    Default: arn:aws:acm:us-east-1:875455478341:certificate/d36f97d6-d681-4ccb-bc2d-942d56ada63a
+  ImageUrl:
+    Type: String
+    Default: 875455478341.dkr.ecr.us-east-1.amazonaws.com/giraffe:latest
+  ContainerPort:
+    Type: Number
+    Default: 8000
+  ContainerCpu:
+    Type: Number
+    Default: 256
+  ContainerMemory:
+    Type: Number
+    Default: 512
+  Path:
+    Type: String
+    Default: "*"
+  DesiredCount:
+    Type: Number
+    Default: 1
+  MaxCount:
+    Type: Number
+    Default: 4
+
+Conditions:
+  CreateProdResources: !Equals [!Ref EnvType, Prod]
+  CreateDevResources: !Equals [!Ref EnvType, Dev]
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !FindInMap ["SubnetConfig", "VPC", "CIDR"]
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref EnvironmentName, "VPC"]]
+
+  PublicSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref "AWS::Region"
+      VpcId: !Ref "VPC"
+      CidrBlock: !FindInMap ["SubnetConfig", "PublicOne", "CIDR"]
+      MapPublicIpOnLaunch: true
+  PublicSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref "AWS::Region"
+      VpcId: !Ref "VPC"
+      CidrBlock: !FindInMap ["SubnetConfig", "PublicTwo", "CIDR"]
+      MapPublicIpOnLaunch: true
+
+  PrivateSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref "AWS::Region"
+      VpcId: !Ref "VPC"
+      CidrBlock: !FindInMap ["SubnetConfig", "PrivateOne", "CIDR"]
+  PrivateSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref "AWS::Region"
+      VpcId: !Ref "VPC"
+      CidrBlock: !FindInMap ["SubnetConfig", "PrivateTwo", "CIDR"]
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  GatewayAttachement:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref "VPC"
+      InternetGatewayId: !Ref "InternetGateway"
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: GatewayAttachement
+    Properties:
+      VpcId: !Ref "VPC"
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachement
+    Properties:
+      RouteTableId: !Ref "PublicRouteTable"
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref "InternetGateway"
+  PublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetOne
+      RouteTableId: !Ref PublicRouteTable
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetTwo
+      RouteTableId: !Ref PublicRouteTable
+
+  NatGatewayOneAttachment:
+    Type: AWS::EC2::EIP
+    DependsOn: GatewayAttachement
+    Properties:
+      Domain: vpc
+  NatGatewayTwoAttachment:
+    Type: AWS::EC2::EIP
+    DependsOn: GatewayAttachement
+    Properties:
+      Domain: vpc
+  NatGatewayOne:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayOneAttachment.AllocationId
+      SubnetId: !Ref PublicSubnetOne
+  NatGatewayTwo:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayTwoAttachment.AllocationId
+      SubnetId: !Ref PublicSubnetTwo
+  PrivateRouteTableOne:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref "VPC"
+  PrivateRouteOne:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableOne
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayOne
+  PrivateRouteTableOneAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableOne
+      SubnetId: !Ref PrivateSubnetOne
+  PrivateRouteTableTwo:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref "VPC"
+  PrivateRouteTwo:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableTwo
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayTwo
+  PrivateRouteTableTwoAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableTwo
+      SubnetId: !Ref PrivateSubnetTwo
+
+  ####
+  # ALB related resources
+  ####
+  PublicLoadBalancerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the public facing load balancer
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+  PublicLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: GatewayAttachement
+    Properties:
+      Name: !Join ["-", [!Ref EnvironmentName, "LoadBalancer"]]
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: "30"
+      Subnets:
+        - !Ref "PublicSubnetOne"
+        - !Ref "PublicSubnetTwo"
+      SecurityGroups:
+        - !Ref PublicLoadBalancerSG
+
+  TargetGroupPublic:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Join ["-", [!Ref EnvironmentName, "Public", "Giraffe"]]
+      HealthCheckIntervalSeconds: 6
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Port: 443
+      Protocol: HTTPS
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref "VPC"
+
+  PublicLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - PublicLoadBalancer
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref "TargetGroupPublic"
+          Type: "forward"
+      LoadBalancerArn: !Ref "PublicLoadBalancer"
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref SSLCertARN
+  ###
+  # Policies/Roles for ECS
+  ###
+
+  ECSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName: !Join ["-", [!Ref EnvironmentName, "ecs-service"]]
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  # Rules which allow ECS to attach network interfaces to instances
+                  # on your behalf in order for awsvpc networking mode to work right
+                  - "ec2:AttachNetworkInterface"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:CreateNetworkInterfacePermission"
+                  - "ec2:DeleteNetworkInterface"
+                  - "ec2:DeleteNetworkInterfacePermission"
+                  - "ec2:Describe*"
+                  - "ec2:DetachNetworkInterface"
+
+                  # Rules which allow ECS to update load balancers on your behalf
+                  # with the information sabout how to send traffic to your containers
+                  - "elasticloadbalancing:DeregisterInstancesFromLoadBalancer"
+                  - "elasticloadbalancing:DeregisterTargets"
+                  - "elasticloadbalancing:Describe*"
+                  - "elasticloadbalancing:RegisterInstancesWithLoadBalancer"
+                  - "elasticloadbalancing:RegisterTargets"
+                Resource: "*"
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName:
+            !Join [
+              "-",
+              [!Ref EnvironmentName, "AmazonECSTaskExecutionRolePolicy"],
+            ]
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  # Allow the ECS Tasks to download images from ECR
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:BatchGetImage"
+                  # Allow the ECS tasks to upload logs to CloudWatch
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
+        - PolicyName:
+            !Join [
+              "-",
+              [!Ref EnvironmentName, "secret-access", "ECSTaskExecutionRole"],
+            ]
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  # SecretsAccess
+                  - "secretsmanager:GetSecretValue"
+                Resource: !Ref MyRDSInstanceRotationSecret
+
+  ECSFargateAutoScale:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName: !Join ["-", [!Ref EnvironmentName, "ECSFargateAutoScale"]]
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  # AutoScale for Fargate
+                  - "aplication-autoscaling:*"
+                  - "ecs:DescribeServices"
+                  - "ecs:UpdateService"
+                  - "cloudwatch:DescribeAlarms"
+                  - "cloudwatch:PutMetricAlarm"
+                Resource: "*"
+
+  ###
+  # ECS
+  ###
+  AutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: !Ref MaxCount
+      MinCapacity: !Ref DesiredCount
+      ResourceId: !Join ["/", [service, !Ref ECSCluster, !GetAtt Service.Name]]
+      RoleARN: !GetAtt [ECSFargateAutoScale, Arn]
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  AutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: ServiceAutoScalingPolicy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        ScaleInCooldown: 60
+        ScaleOutCooldown: 60
+        TargetValue: 70
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Join ["-", [!Ref EnvironmentName, "Cluster"]]
+
+  ContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the containers
+      VpcId: !Ref "VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref ContainerPort
+          ToPort: !Ref ContainerPort
+          CidrIp: !FindInMap ["SubnetConfig", "VPC", "CIDR"]
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ["-", [!Ref EnvironmentName, "service", "Giraffe"]]
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Join ["-", [!Ref EnvironmentName, "Giraffe"]]
+      Cpu: !Ref "ContainerCpu"
+      Memory: !Ref "ContainerMemory"
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !GetAtt ["ECSRole", "Arn"] #inside container
+      ExecutionRoleArn: !GetAtt ["ECSTaskExecutionRole", "Arn"]
+
+      ContainerDefinitions:
+        - Name: !Join ["-", [!Ref EnvironmentName, "Giraffe"]]
+          Cpu: !Ref "ContainerCpu"
+          Memory: !Ref "ContainerMemory"
+          Image: !Ref "ImageUrl"
+          Environment:
+            - Name: "DB_HOST"
+              Value: !GetAtt RDS.Endpoint.Address
+            - Name: "CONTAINER_PORT"
+              Value: !Ref ContainerPort
+          Secrets:
+            - Name: "DB_USER"
+              ValueFrom:
+                !Join [
+                  ":",
+                  [!Ref "MyRDSInstanceRotationSecret", "username", ":"],
+                ]
+            - Name: "DB_PASS"
+              ValueFrom:
+                !Join [
+                  ":",
+                  [!Ref "MyRDSInstanceRotationSecret", "password", ":"],
+                ]
+
+          PortMappings:
+            - ContainerPort: !Ref "ContainerPort"
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-group:
+                !Join ["-", [!Ref EnvironmentName, "service", "Giraffe"]]
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix:
+                !Join ["-", [!Ref EnvironmentName, "Giraffe"]]
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: LoadBalancerRule
+    Properties:
+      HealthCheckGracePeriodSeconds: 2000000000
+      ServiceName: !Join ["-", [!Ref EnvironmentName, "Giraffe"]]
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 75
+      DesiredCount: !Ref "DesiredCount"
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !Ref ContainerSecurityGroup
+          Subnets:
+            - !Ref PrivateSubnetOne
+            - !Ref PrivateSubnetTwo
+      TaskDefinition: !Ref "TaskDefinition"
+      LoadBalancers:
+        - ContainerName: !Join ["-", [!Ref EnvironmentName, "Giraffe"]]
+          ContainerPort: !Ref "ContainerPort"
+          TargetGroupArn: !Ref "TargetGroup"
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 6
+      HealthCheckPath: /api/health
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      TargetType: ip
+      Name: !Join ["-", [!Ref EnvironmentName, "Giraffe"]]
+      Port: !Ref "ContainerPort"
+      Protocol: HTTP
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref VPC
+
+  LoadBalancerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref "TargetGroup"
+          Type: "forward"
+      Conditions:
+        - Field: path-pattern
+          Values: [!Ref "Path"]
+      ListenerArn: !Ref PublicLoadBalancerListener
+      Priority: 1
+
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access Secret Manager
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !FindInMap ["SubnetConfig", "VPC", "CIDR"]
+      VpcId: !Ref VPC
+
+  ###
+  # Secrets
+  ###
+
+  SecretsManagerVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      SubnetIds:
+        - Ref: PrivateSubnetOne
+        - Ref: PrivateSubnetTwo
+      SecurityGroupIds:
+        - Fn::GetAtt:
+            - VPC
+            - DefaultSecurityGroup
+        - !GetAtt ECSSecurityGroup.GroupId
+
+      VpcEndpointType: Interface
+      ServiceName:
+        Fn::Sub: com.amazonaws.${AWS::Region}.secretsmanager
+      PrivateDnsEnabled: true
+      VpcId:
+        Ref: VPC
+
+  MyRDSInstanceRotationSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: This is my rds instance secret
+      Name: !Join ["/", ["/Giraffe", !Ref EnvironmentName]]
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "root"}'
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: "\"@/\\"
+      Tags:
+        - Key: Giraffe
+          Value: !Join ["-", [!Ref EnvironmentName, "SECRET"]]
+
+  SecretRDSInstanceAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId:
+        Ref: MyRDSInstanceRotationSecret
+      TargetId:
+        Ref: RDS
+      TargetType: AWS::RDS::DBInstance
+
+  MySecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    DependsOn: SecretRDSInstanceAttachment
+    Properties:
+      SecretId:
+        Ref: MyRDSInstanceRotationSecret
+      HostedRotationLambda:
+        RotationType: MySQLSingleUser
+        RotationLambdaName:
+          !Join ["-", [!Ref EnvironmentName, "SecretsManagerRotation"]]
+        VpcSecurityGroupIds:
+          Fn::GetAtt:
+            - VPC
+            - DefaultSecurityGroup
+        VpcSubnetIds:
+          Fn::Join:
+            - ","
+            - - Ref: PrivateSubnetOne
+              - Ref: PrivateSubnetTwo
+      RotationRules:
+        AutomaticallyAfterDays: 180
+
+  ####
+  # RDS
+  ####
+
+  SubNetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "PrivateSubnetOne and PrivateSubnetTwo"
+      SubnetIds:
+        - !Ref PrivateSubnetOne
+        - !Ref PrivateSubnetTwo
+
+  DBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access in VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: !FindInMap ["SubnetConfig", "VPC", "CIDR"] #10.0.2.0/23 change later for only private
+      VpcId: !Ref VPC
+
+  RDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      MasterUsername:
+        Fn::Sub: "{{resolve:secretsmanager:${MyRDSInstanceRotationSecret}::username}}"
+      MasterUserPassword:
+        Fn::Sub: "{{resolve:secretsmanager:${MyRDSInstanceRotationSecret}::password}}"
+      Engine: mysql
+      EngineVersion: 5.7.36
+      DBInstanceClass:
+        !If [
+          CreateProdResources,
+          db.m5.large,
+          !If [CreateDevResources, db.t3.micro, db.t3.micro],
+        ]
+      StorageType: gp2
+      PubliclyAccessible: False
+      AllocatedStorage:
+        !If [CreateProdResources, "1024", !If [CreateDevResources, "50", "50"]]
+      DBInstanceIdentifier: !Join ["-", [!Ref EnvironmentName, "DB"]]
+      AvailabilityZone: !Select [1, !GetAZs ]
+      DBSubnetGroupName: !Ref SubNetGroup
+      VPCSecurityGroups: [!Ref DBSG]
+      DeletionProtection:
+        !If [CreateProdResources, true, !If [CreateDevResources, false, false]]
+      EnableCloudwatchLogsExports:
+        - error
+        - general
+        - audit
+
+######################################
+Outputs:
+  VpcId:
+    Description: The ID of the VPC that this stack is deployed in
+    Value: !Ref VPC
+  PublicSubnetOne:
+    Description: Public subnet one
+    Value: !Ref PublicSubnetOne
+  PublicSubnetTwo:
+    Description: Public subnet two
+    Value: !Ref PublicSubnetTwo
+  PrivateSubnetOne:
+    Description: Private subnet one
+    Value: !Ref PrivateSubnetOne
+  PrivateSubnetTwo:
+    Description: Private subnet two
+    Value: !Ref PrivateSubnetTwo
+  ExternalUrl:
+    Description: Load balancer
+    Value: !Sub https://${PublicLoadBalancer.DNSName}
+  StackName:
+    Description: Stack name
+    Value: !Ref AWS::StackName
