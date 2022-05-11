@@ -15,12 +15,8 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.sqlite3',
         'NAME': 'giraffe',
-        'USER': enVar.get('DB_USER'),
-        'PASSWORD': enVar.get('DB_PASS'),
-        'HOST': enVar.get('DB_HOST'),
-        'PORT': '3306',
     }
 }
 
